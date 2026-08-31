@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AssignMate — Assignment Organizer</title>
+<style>
+:root{
+  --navy:#10182b; --navy2:#17213a; --purple:#7552e8; --purple2:#9b7af3;
+  --text:#1d2433; --muted:#687286; --line:#e4e7ee; --bg:#f7f8fb; --white:#fff;
+  --green:#39a956; --green-bg:#eaf8ed; --yellow:#e7ad18; --yellow-bg:#fff8df;
+  --todo:#9a73e7; --todo-bg:#f3edff; --danger:#d9534f;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{display:flex;min-height:100vh}
+.sidebar{width:246px;background:linear-gradient(180deg,#0e172a,#121c31);color:#fff;padding:22px 14px;display:flex;flex-direction:column;position:fixed;inset:0 auto 0 0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:21px;padding:7px 9px 28px;color:#9b7af3}
+.brand-icon{font-size:25px}
+.nav{display:grid;gap:7px}
+.nav button{border:0;background:transparent;color:#d8deec;text-align:left;padding:12px 13px;border-radius:9px;font-size:15px;display:flex;gap:12px;align-items:center}
+.nav button:hover,.nav button.active{background:rgba(125,91,231,.24);color:#fff}
+.nav-icon{width:20px;text-align:center}
+.sidebar-bottom{margin-top:auto}
+.profile{margin-top:12px;border:1px solid #2d3851;border-radius:10px;padding:10px;display:flex;align-items:center;gap:10px;color:#fff}
+.avatar{width:35px;height:35px;border-radius:50%;background:#7552e8;display:grid;place-items:center;font-weight:700}
+.profile small{color:#aeb7ca;display:block}
+.main{margin-left:246px;width:calc(100% - 246px);padding:30px 34px 45px}
+.page{display:none}.page.active{display:block}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.sync-status{font-size:12px;color:var(--muted);margin-top:5px}
+h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
+.primary{border:0;background:var(--purple);color:#fff;padding:12px 17px;border-radius:9px;font-weight:700;box-shadow:0 5px 14px rgba(117,82,232,.18)}
+.primary:hover{background:#6542dc}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-bottom:26px}
+.stat{padding:25px;border-radius:12px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;gap:18px}
+.stat.green{background:linear-gradient(120deg,#f0faef,#fff);border-color:#cce9d0}.stat.yellow{background:linear-gradient(120deg,#fffaf0,#fff);border-color:#f3df9e}.stat.purple{background:linear-gradient(120deg,#f8f3ff,#fff);border-color:#dfd1fa}
+.stat-icon{width:47px;height:47px;border-radius:50%;display:grid;place-items:center;font-size:23px;font-weight:800}
+.green .stat-icon{background:var(--green);color:#fff}.yellow .stat-icon{background:#f0b51c;color:#fff}.purple .stat-icon{background:var(--todo);color:#fff}
+.stat-num{font-size:28px;font-weight:800}.stat-label{font-weight:600}.stat-note{font-size:13px;color:var(--muted);margin-top:4px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.filters{padding:18px 20px;display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:14px;border-bottom:1px solid var(--line)}
+.field label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:7px}
+.field input,.field select,.field textarea{width:100%;border:1px solid #d8dde7;border-radius:8px;padding:10px 11px;outline:none;background:#fff;color:var(--text)}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(117,82,232,.1)}
+.search{position:relative}.search input{padding-left:37px}.search span{position:absolute;left:12px;top:33px;color:#8992a4}
+.table-wrap{overflow-x:auto}.assignment-table{width:100%;border-collapse:collapse}
+.assignment-table th,.assignment-table td{padding:15px 20px;text-align:left;border-bottom:1px solid #edf0f4;font-size:14px}
+.assignment-table th{font-size:12px;color:#667084;background:#fcfcfd}
+.assignment-table tr:last-child td{border-bottom:0}
+.title-cell strong{display:block;color:#5532d0}.title-cell small{display:block;color:var(--muted);margin-top:4px}
+.class-pill{display:inline-block;padding:6px 10px;border-radius:8px;background:#edf3ff;color:#3976dc;font-size:12px;font-weight:700}
+.status{display:inline-block;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:800}
+.status.completed{color:#24883b;background:var(--green-bg)}.status.progress{color:#a17100;background:var(--yellow-bg)}.status.todo{color:#7548c9;background:var(--todo-bg)}.status-select{border:0;cursor:pointer;padding:6px 10px;font-weight:800}
+.overdue{color:var(--danger);font-weight:700}.due-soon{color:#a17100;font-weight:700}
+.actions{display:flex;gap:6px}.icon-btn{border:0;background:transparent;padding:6px;border-radius:6px;color:#667084}.icon-btn:hover{background:#f0f2f6;color:var(--purple)}
+.empty{padding:55px 20px;text-align:center;color:var(--muted)}.empty strong{display:block;color:var(--text);font-size:17px;margin-bottom:6px}
+.legend{display:flex;gap:24px;padding:18px 20px;color:#4f596d;font-size:13px}.dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:7px}.dot.g{background:var(--green)}.dot.y{background:#f0b51c}.dot.p{background:var(--todo)}
+.section-card{padding:24px;margin-bottom:20px}.section-card h2{margin:0 0 7px}.section-card p{color:var(--muted)}
+.class-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:18px}
+.class-item{border:1px solid var(--line);border-radius:9px;padding:14px;display:flex;justify-content:space-between;align-items:center;background:#fff}
+.class-item button{border:0;background:transparent;color:#9aa2b1}
+.upload{border:2px dashed #cfd5e1;padding:25px;border-radius:10px;text-align:center;margin-top:16px}.upload input{margin-top:12px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.cal-head{padding:12px;text-align:center;font-size:12px;font-weight:800;color:var(--muted);background:#fafbfc;border-bottom:1px solid var(--line)}
+.cal-day{min-height:110px;padding:9px;border-right:1px solid #edf0f4;border-bottom:1px solid #edf0f4}.cal-day:nth-child(7n){border-right:0}.cal-num{font-size:12px;font-weight:800;color:#657086;margin-bottom:6px}.cal-day.today{background:#fbf9ff}.cal-num.today-num{color:var(--purple)}
+.cal-task{font-size:11px;padding:5px 6px;border-radius:5px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cal-task.completed{background:var(--green-bg);color:#23813a}.cal-task.progress{background:var(--yellow-bg);color:#936900}.cal-task.todo{background:var(--todo-bg);color:#7145bf}
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(10,16,29,.48);z-index:10;align-items:center;justify-content:center;padding:20px}.modal-backdrop.open{display:flex}
+.modal{background:#fff;width:min(590px,100%);border-radius:14px;padding:25px;box-shadow:0 25px 80px rgba(0,0,0,.22)}.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.modal-header h2{margin:0}.close{border:0;background:#f0f2f6;border-radius:7px;width:32px;height:32px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.full{grid-column:1/-1}.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}.secondary{border:1px solid #d7dce6;background:#fff;padding:11px 16px;border-radius:8px;font-weight:700}.danger{color:var(--danger)}
+.toast{position:fixed;right:25px;bottom:25px;background:#182238;color:#fff;padding:13px 17px;border-radius:9px;display:none;z-index:20}.toast.show{display:block}
+@media(max-width:900px){.sidebar{width:70px;padding:18px 9px}.brand span,.nav button span:not(.nav-icon),.profile>div:not(.avatar),.sidebar-bottom .nav button span:not(.nav-icon){display:none}.brand{padding:7px 12px 28px}.main{margin-left:70px;width:calc(100% - 70px);padding:22px 18px}.stats{gap:12px}.filters{grid-template-columns:1fr 1fr}.assignment-table th:nth-child(4),.assignment-table td:nth-child(4){display:none}}
+@media(max-width:600px){.header{align-items:flex-start;gap:15px}.header .primary{padding:10px}.stats{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.calendar-grid{min-width:650px}.calendar-scroll{overflow:auto}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><span class="brand-icon">📖</span><span>AssignMate</span></div>
+  <nav class="nav">
+    <button class="active" data-page="dashboard"><span class="nav-icon">⌂</span><span>Dashboard</span></button>
+    <button data-page="assignments"><span class="nav-icon">▣</span><span>Assignments</span></button>
+    <button data-page="classes"><span class="nav-icon">🎓</span><span>Classes</span></button>
+    <button data-page="calendar"><span class="nav-icon">□</span><span>Calendar</span></button>
+  </nav>
+  <div class="sidebar-bottom">
+    <nav class="nav"><button data-page="settings"><span class="nav-icon">⚙</span><span>Settings</span></button></nav>
+    <div class="profile"><div class="avatar">S</div><div><strong>Student</strong><small>Assignment organizer</small></div></div>
+  </div>
+</aside>
+
+<main class="main">
+<section id="dashboard" class="page active">
+  <div class="header"><div><h1>Dashboard</h1><p class="subtitle">Stay on top of your assignments.</p><div id="syncStatus" class="sync-status">☁ Local mode</div></div><button class="primary" onclick="openModal()">＋ New Assignment</button></div><div class="card">
+    <div class="filters">
+      <div class="field"><label>SORT BY CLASS</label><select id="filterClass"><option value="">Class (default)</option><option value="asc">Class: A → Z</option><option value="desc">Class: Z → A</option></select></div>
+      <div class="field"><label>SORT BY DUE DATE</label><select id="filterDate"><option value="">Due Date (default)</option><option value="asc">Due Date: Soonest → Latest</option><option value="desc">Due Date: Latest → Soonest</option></select></div>
+      <div class="field search"><label>SEARCH</label><span>⌕</span><input id="search" placeholder="Search assignments..."></div>
+    </div>
+    <div class="table-wrap"><table class="assignment-table"><thead><tr><th>Title</th><th>Class</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="assignmentRows"></tbody></table></div>
+    <div class="legend"><span><i class="dot g"></i>Completed</span><span><i class="dot y"></i>In Progress</span><span><i class="dot p"></i>To Do</span></div>
+  </div>
+</section>
+
+<section id="assignments" class="page">
+  <div class="header"><div><h1>Assignments</h1><p class="subtitle">View and manage everything you need to finish.</p></div><button class="primary" onclick="openModal()">＋ New Assignment</button></div>
+  <div class="card"><div class="filters">
+    <div class="field"><label>SORT BY CLASS</label><select id="aFilterClass"><option value="">Class (default)</option><option value="asc">Class: A → Z</option><option value="desc">Class: Z → A</option></select></div>
+    <div class="field"><label>SORT BY DUE DATE</label><select id="aFilterDate"><option value="">Due Date (default)</option><option value="asc">Due Date: Soonest → Latest</option><option value="desc">Due Date: Latest → Soonest</option></select></div>
+    <div class="field search"><label>SEARCH</label><span>⌕</span><input id="aSearch" placeholder="Search assignments..."></div>
+  </div><div class="table-wrap"><table class="assignment-table"><thead><tr><th>Title</th><th>Class</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="assignmentRows2"></tbody></table></div></div>
+</section>
+
+<section id="classes" class="page">
+  <div class="header"><div><h1>Classes</h1><p class="subtitle">Manage the classes that appear in your assignment dropdown.</p></div></div>
+  <div class="card section-card">
+    <h2>Add a class</h2><p>Enter a class name, then it will be available when creating assignments.</p>
+    <div style="display:flex;gap:10px;max-width:650px"><input id="newClass" class="field" style="border:1px solid #d8dde7;border-radius:8px;padding:11px;flex:1" placeholder="e.g. Physics Honors"><button class="primary" onclick="addClass()">Add Class</button></div>
+    <div class="upload"><strong>Import your classes</strong><div style="color:var(--muted);font-size:13px;margin-top:5px">Upload a .txt or .csv file. Put one class per line, or separate classes with commas.</div><input type="file" id="classFile" accept=".txt,.csv"></div>
+    <div id="classList" class="class-list"></div>
+  </div>
+</section>
+
+<section id="calendar" class="page">
+  <div class="header"><div><h1>Calendar</h1><p class="subtitle">Assignments organized by due date.</p></div></div>
+  <div class="calendar-scroll"><div id="calendarGrid" class="calendar-grid"></div></div>
+</section>
+
+<section id="settings" class="page">
+  <div class="header"><div><h1>Settings</h1><p class="subtitle">Your data is stored locally in this browser.</p></div></div>
+  <div class="card section-card"><h2>Cloud Sync</h2><p>This version is ready for Firebase cloud sync. After you add your Firebase configuration to the top of the file and enable Anonymous Authentication + Firestore, assignments will sync between your phone and computer.</p><p style="font-size:13px;color:var(--muted)">Your Firebase configuration is not a password; Firestore Security Rules protect the data. Follow the setup steps included with this download.</p></div><div class="card section-card"><h2>Data</h2><p>Export a backup of your classes and assignments, or import one later.</p><button class="primary" onclick="exportData()">Export Backup</button> <label class="secondary" style="display:inline-block;cursor:pointer">Import Backup <input type="file" id="backupFile" accept=".json" style="display:none"></label></div>
+  <div class="card section-card"><h2>Danger zone</h2><p>Delete every assignment and class saved in this browser.</p><button class="secondary danger" onclick="clearAll()">Clear All Data</button></div>
+</section>
+</main>
+</div>
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+  <div class="modal-header"><h2 id="modalTitle">New Assignment</h2><button class="close" onclick="closeModal()">×</button></div>
+  <form id="assignmentForm">
+    <input type="hidden" id="editId">
+    <div class="form-grid">
+      <div class="field full"><label>TITLE *</label><input id="title" required placeholder="e.g. Physics Problem Set 2"></div>
+      <div class="field"><label>CLASS *</label><select id="className" required></select></div>
+      <div class="field"><label>DUE DATE *</label><input id="dueDate" type="date" required></div>
+      <div class="field"><label>STATUS</label><select id="status"><option>To Do</option><option>In Progress</option><option>Completed</option></select></div>
+      <div class="field full"><label>DESCRIPTION</label><textarea id="description" rows="4" placeholder="What do you need to do?"></textarea></div>
+    </div>
+    <div class="modal-actions"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary" type="submit">Save Assignment</button></div>
+  </form>
+</div>
+</div>
+<div id="toast" class="toast"></div>
+
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ============================
+ // AssignMate Cloud Sync
+ // ============================
+ // 1. Create a Firebase project.
+ // 2. Enable Anonymous Authentication and Cloud Firestore.
+ // 3. Paste your Firebase web config below.
+ const firebaseConfig = {
+  apiKey: "AIzaSyDsvCYABP8MWfbWOVIbZe1FYNfEgY5Asi0",
+  authDomain: "assignmate-38dc3.firebaseapp.com",
+  projectId: "assignmate-38dc3",
+  storageBucket: "assignmate-38dc3.firebasestorage.app",
+  messagingSenderId: "560275764867",
+  appId: "1:560275764867:web:c8ffbad866a105c9cd0db6",
+  measurementId: "G-JKJES9Y3X5"
+};
+
+ const KEY='assignmate-data-v1';
+ const defaultClasses=['Physics Honors','Advanced Astrophysics','Spanish','Mathematics'];
+ let data={classes:[],assignments:[]};
+ let cloudEnabled=false;
+ let currentUser=null;
+ let db=null;
+
+ const $=id=>document.getElementById(id);
+
+ function firebaseConfigured(){
+   return firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('PASTE_') &&
+          firebaseConfig.projectId && !firebaseConfig.projectId.includes('PASTE_');
+}
+
+ async function initCloud(){
+   if(!firebaseConfigured()){
+     data=JSON.parse(localStorage.getItem(KEY)||'null')||{classes:defaultClasses,assignments:[]};
+     const sync=$('syncStatus'); if(sync) sync.textContent='☁ Local mode';
+     if(!Array.isArray(data.classes))data.classes=[];
+     if(!Array.isArray(data.assignments))data.assignments=[];
+     render();
+     toast('Cloud sync is not configured yet — using local data.');
+     return;
+   }
+
+   try{
+     firebase.initializeApp(firebaseConfig);
+     db=firebase.firestore();
+     const provider = new firebase.auth.GoogleAuthProvider();
+     await firebase.auth().signInWithPopup(provider);
+     currentUser = firebase.auth().currentUser;
+     cloudEnabled=true;
+     const sync=$('syncStatus'); if(sync) sync.textContent='☁ Synced across devices';
+
+     const ref=db.collection('users').doc(currentUser.uid);
+     const snap=await ref.get();
+     if(snap.exists){
+       data=snap.data();
+       if(!Array.isArray(data.classes))data.classes=[];
+       if(!Array.isArray(data.assignments))data.assignments=[];
+     }else{
+       data={classes:defaultClasses,assignments:[]};
+       await ref.set(data);
+     }
+     render();
+     toast('Cloud sync connected ✓');
+   }catch(err){
+     console.error(err);
+     data=JSON.parse(localStorage.getItem(KEY)||'null')||{classes:defaultClasses,assignments:[]};
+     if(!Array.isArray(data.classes))data.classes=[];
+     if(!Array.isArray(data.assignments))data.assignments=[];
+     render();
+     toast('Cloud connection failed — using local data.');
+   }
+ }
+
+ const localSave=()=>localStorage.setItem(KEY,JSON.stringify(data));
+
+ async function save(){
+   localSave();
+   if(cloudEnabled && currentUser){
+     try{
+       await db.collection('users').doc(currentUser.uid).set(data);
+     }catch(err){
+       console.error('Cloud save failed:',err);
+       toast('Saved locally; cloud sync failed.');
+     }
+   }
+ }
+const todayStr=()=>{const d=new Date();return localDate(d)};
+function localDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+function esc(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+function statusClass(s){return s==='Completed'?'completed':s==='In Progress'?'progress':'todo'}
+function formatDate(s){if(!s)return '—';const [y,m,d]=s.split('-');return new Date(Number(y),Number(m)-1,Number(d)).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}
+function dateFilter(a,type){
+  if(!type)return true;
+  const due=new Date(a.dueDate+'T00:00:00'), now=new Date();now.setHours(0,0,0,0);
+  const diff=Math.round((due-now)/86400000);
+  if(type==='overdue')return diff<0 && a.status!=='Completed';
+  if(type==='today')return diff===0;
+  if(type==='week')return diff>=0&&diff<=7;
+  if(type==='later')return diff>7;
+  return true;
+}
+function populateClassSelects(){
+  const el=$('className');const old=el.value;
+  el.innerHTML=data.classes.length?data.classes.map(c=>`<option>${esc(c)}</option>`).join(''):'<option value="">Add a class first</option>';
+  el.value=data.classes.includes(old)?old:(data.classes[0]||'');
+}
+function filtered(which){
+  const pre=which===1?['filterClass','filterDate','search']:['aFilterClass','aFilterDate','aSearch'];
+  const [classSort,dateSort,q]=pre.map(x=>$(x).value.trim().toLowerCase());
+  const result=data.assignments.filter(a=>
+    !q || (a.title+' '+a.description+' '+a.className).toLowerCase().includes(q)
+  );
+  return result.sort((a,b)=>{
+    if(classSort){
+      const cmp=a.className.localeCompare(b.className,undefined,{sensitivity:'base'});
+      if(cmp!==0)return classSort==='asc'?cmp:-cmp;
+    }
+    if(dateSort){
+      const cmp=a.dueDate.localeCompare(b.dueDate);
+      if(cmp!==0)return dateSort==='asc'?cmp:-cmp;
+    }
+    return a.dueDate.localeCompare(b.dueDate);
+  });
+}
+
+function rowHTML(a){
+ const due=a.status==='Completed'?'Completed':formatDate(a.dueDate);
+ const d=new Date(a.dueDate+'T00:00:00'),now=new Date();now.setHours(0,0,0,0);const diff=Math.round((d-now)/86400000);
+ const dueClass=a.status!=='Completed'?(diff<0?'overdue':diff<=2?'due-soon':''):'';
+ return `<tr><td class="title-cell"><strong>${esc(a.title)}</strong><small>${esc(a.description||'No description')}</small></td><td><span class="class-pill">${esc(a.className)}</span></td><td class="${dueClass}">${due}${a.status!=='Completed'&&diff===0?'<br><small>Today</small>':''}</td><td><select class="status-select status ${statusClass(a.status)}" aria-label="Change status" onchange="changeStatus('${a.id}', this.value)">
+<option ${a.status==='To Do'?'selected':''}>To Do</option>
+<option ${a.status==='In Progress'?'selected':''}>In Progress</option>
+<option ${a.status==='Completed'?'selected':''}>Completed</option>
+</select></td><td><div class="actions"><button class="icon-btn" title="Edit" onclick="editAssignment('${a.id}')">✎</button><button class="icon-btn" title="Delete" onclick="deleteAssignment('${a.id}')">♲</button></div></td></tr>`
+}
+function renderRows(){
+  const a1=filtered(1),a2=filtered(2);
+  $('assignmentRows').innerHTML=a1.length?a1.map(rowHTML).join():'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
+  $('assignmentRows2').innerHTML=a2.length?a2.map(rowHTML).join():'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
+}
+function renderClasses(){
+ $('classList').innerHTML=data.classes.length?data.classes.map(c=>`<div class="class-item"><strong>${esc(c)}</strong><button title="Remove" onclick="removeClass('${encodeURIComponent(c)}')">✕</button></div>`).join(''):'<div class="empty">No classes yet.</div>';
+}
+function renderCalendar(){
+ const now=new Date(),y=now.getFullYear(),m=now.getMonth(),first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),start=first.getDay();
+ let h=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(x=>`<div class="cal-head">${x}</div>`).join('');
+ for(let i=0;i<start;i++)h+='<div class="cal-day"></div>';
+ for(let day=1;day<=days;day++){
+  const ds=localDate(new Date(y,m,day)),isToday=ds===todayStr(),tasks=data.assignments.filter(a=>a.dueDate===ds);
+  h+=`<div class="cal-day ${isToday?'today':''}"><div class="cal-num ${isToday?'today-num':''}">${day}</div>${tasks.map(a=>`<div class="cal-task ${statusClass(a.status)}" title="${esc(a.title)}">${esc(a.title)}</div>`).join('')}</div>`;
+ }
+ $('calendarGrid').innerHTML=h;
+}
+function render(){populateClassSelects();renderRows();renderClasses();renderCalendar()}
+function openModal(id=null){
+ $('modal').classList.add('open');$('modalTitle').textContent=id?'Edit Assignment':'New Assignment';
+ $('editId').value=id||'';const a=id&&data.assignments.find(x=>x.id===id);
+ $('title').value=a?.title||'';$('className').value=a?.className||data.classes[0]||'';$('dueDate').value=a?.dueDate||todayStr();$('status').value=a?.status||'To Do';$('description').value=a?.description||'';$('title').focus();
+}
+function closeModal(){$('modal').classList.remove('open')}
+$('assignmentForm').addEventListener('submit',e=>{e.preventDefault();const id=$('editId').value;
+ const obj={id:id||crypto.randomUUID(),title:$('title').value.trim(),className:$('className').value,dueDate:$('dueDate').value,status:$('status').value,description:$('description').value.trim()};
+ if(!obj.className){toast('Add a class first.');return}
+ if(id){const i=data.assignments.findIndex(a=>a.id===id);data.assignments[i]=obj;toast('Assignment updated.')}else{data.assignments.push(obj);toast('Assignment created.')}
+ save();closeModal();render();
+});
+function changeStatus(id,status){
+  const a=data.assignments.find(x=>x.id===id);
+  if(!a)return;
+  a.status=status;
+  save();
+  render();
+  toast(`Status changed to ${status}.`);
+}
+function editAssignment(id){openModal(id)}
+function deleteAssignment(id){const a=data.assignments.find(x=>x.id===id);if(confirm(`Delete "${a.title}"?`)){data.assignments=data.assignments.filter(x=>x.id!==id);save();render();toast('Assignment deleted.')}}
+function addClass(){const input=$('newClass'),name=input.value.trim();if(!name)return;if(data.classes.some(c=>c.toLowerCase()===name.toLowerCase())){toast('That class already exists.');return}data.classes.push(name);data.classes.sort();input.value='';save();render();toast('Class added.')}
+function removeClass(encoded){const c=decodeURIComponent(encoded);if(data.assignments.some(a=>a.className===c)){alert('This class is used by an assignment. Delete or edit those assignments first.');return}if(confirm(`Remove "${c}"?`)){data.classes=data.classes.filter(x=>x!==c);save();render()}}
+$('classFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{const names=reader.result.split(/[\r\n,]+/).map(x=>x.trim()).filter(Boolean);let added=0;names.forEach(n=>{if(!data.classes.some(c=>c.toLowerCase()===n.toLowerCase())){data.classes.push(n);added++}});data.classes.sort();save();render();toast(`Imported ${added} class${added===1?'':'es'}.`)};reader.readAsText(file);e.target.value='' });
+function exportData(){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='assignmate-backup.json';a.click();URL.revokeObjectURL(url)}
+$('backupFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!Array.isArray(x.classes)||!Array.isArray(x.assignments))throw Error();data=x;save();render();toast('Backup imported.')}catch{alert('That file is not a valid AssignMate backup.')}};r.readAsText(file);e.target.value=''});
+function clearAll(){if(confirm('This will delete all assignments and classes from this browser. Continue?')){data={classes:[],assignments:[]};save();render();toast('All data cleared.')}}
+document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$(b.dataset.page).classList.add('active');if(b.dataset.page==='calendar')renderCalendar()}));
+['filterClass','filterDate','search','aFilterClass','aFilterDate','aSearch'].forEach(id=>$(id).addEventListener('input',renderRows));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
+initCloud();
+</script>
+</body>
+</html>
