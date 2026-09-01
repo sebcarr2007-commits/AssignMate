@@ -143,7 +143,15 @@ h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
     <div class="form-grid">
       <div class="field full"><label>TITLE *</label><input id="title" required placeholder="e.g. Physics Problem Set 2"></div>
       <div class="field"><label>CLASS *</label><select id="className" required></select></div>
-      <div class="field"><label>DUE DATE *</label><input id="dueDate" type="date" required></div>
+      <div class="field">
+  <label>DUE DATE *</label>
+  <input id="dueDate" type="date" required>
+</div>
+
+<div class="field">
+  <label>DUE TIME</label>
+  <input id="dueTime" type="time">
+</div>
       <div class="field"><label>STATUS</label><select id="status"><option>To Do</option><option>In Progress</option><option>Completed</option></select></div>
       <div class="field full"><label>DESCRIPTION</label><textarea id="description" rows="4" placeholder="What do you need to do?"></textarea></div>
     </div>
@@ -283,8 +291,21 @@ function filtered(which){
   });
 }
 
+function formatTime(s){
+  if(!s)return '';
+  const [h,m]=s.split(':');
+  const d=new Date();
+  d.setHours(Number(h),Number(m),0,0);
+  return d.toLocaleTimeString(undefined,{
+    hour:'numeric',
+    minute:'2-digit'
+  });
+}
+
 function rowHTML(a){
- const due=a.status==='Completed'?'Completed':formatDate(a.dueDate);
+ const due=a.status==='Completed'
+   ? 'Completed'
+   : formatDate(a.dueDate)+(a.dueTime?`<br><small>${formatTime(a.dueTime)}</small>`:'');
  const d=new Date(a.dueDate+'T00:00:00'),now=new Date();now.setHours(0,0,0,0);const diff=Math.round((d-now)/86400000);
  const dueClass=a.status!=='Completed'?(diff<0?'overdue':diff<=2?'due-soon':''):'';
  return `<tr><td class="title-cell"><strong>${esc(a.title)}</strong><small>${esc(a.description||'No description')}</small></td><td><span class="class-pill">${esc(a.className)}</span></td><td class="${dueClass}">${due}${a.status!=='Completed'&&diff===0?'<br><small>Today</small>':''}</td><td><select class="status-select status ${statusClass(a.status)}" aria-label="Change status" onchange="changeStatus('${a.id}', this.value)">
@@ -315,11 +336,25 @@ function render(){populateClassSelects();renderRows();renderClasses();renderCale
 function openModal(id=null){
  $('modal').classList.add('open');$('modalTitle').textContent=id?'Edit Assignment':'New Assignment';
  $('editId').value=id||'';const a=id&&data.assignments.find(x=>x.id===id);
- $('title').value=a?.title||'';$('className').value=a?.className||data.classes[0]||'';$('dueDate').value=a?.dueDate||todayStr();$('status').value=a?.status||'To Do';$('description').value=a?.description||'';$('title').focus();
+ $('title').value=a?.title||'';
+$('className').value=a?.className||data.classes[0]||'';
+$('dueDate').value=a?.dueDate||todayStr();
+$('dueTime').value=a?.dueTime||'';
+$('status').value=a?.status||'To Do';
+$('description').value=a?.description||'';
+$('title').focus();
 }
 function closeModal(){$('modal').classList.remove('open')}
 $('assignmentForm').addEventListener('submit',e=>{e.preventDefault();const id=$('editId').value;
- const obj={id:id||crypto.randomUUID(),title:$('title').value.trim(),className:$('className').value,dueDate:$('dueDate').value,status:$('status').value,description:$('description').value.trim()};
+ const obj={
+  id:id||crypto.randomUUID(),
+  title:$('title').value.trim(),
+  className:$('className').value,
+  dueDate:$('dueDate').value,
+  dueTime:$('dueTime').value,
+  status:$('status').value,
+  description:$('description').value.trim()
+};
  if(!obj.className){toast('Add a class first.');return}
  if(id){const i=data.assignments.findIndex(a=>a.id===id);data.assignments[i]=obj;toast('Assignment updated.')}else{data.assignments.push(obj);toast('Assignment created.')}
  save();closeModal();render();
