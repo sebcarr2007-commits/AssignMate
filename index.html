@@ -95,10 +95,10 @@ h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
   <div class="header"><div><h1>Dashboard</h1><p class="subtitle">Stay on top of your assignments.</p><div id="syncStatus" class="sync-status">☁ Local mode</div></div><button class="primary" onclick="openModal()">＋ New Assignment</button></div><div class="card">
     <div class="filters">
       <div class="field"><label>SORT BY CLASS</label><select id="filterClass"><option value="">Class (default)</option><option value="asc">Class: A → Z</option><option value="desc">Class: Z → A</option></select></div>
-      <div class="field"><label>SORT BY DUE DATE</label><select id="filterDate"><option value="">Due Date (default)</option><option value="asc">Due Date: Soonest → Latest</option><option value="desc">Due Date: Latest → Soonest</option></select></div>
+      <div class="field"><label>SORT BY DUE DATE & TIME</label><select id="filterDate"><option value="">Due Date & Time (default)</option><option value="asc">Due Date/Time: Soonest → Latest</option><option value="desc">Due Date/Time: Latest → Soonest</option></select></div>
       <div class="field search"><label>SEARCH</label><span>⌕</span><input id="search" placeholder="Search assignments..."></div>
     </div>
-    <div class="table-wrap"><table class="assignment-table"><thead><tr><th>Title</th><th>Class</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="assignmentRows"></tbody></table></div>
+    <div class="table-wrap"><table class="assignment-table"><thead><tr><th>Title</th><th>Class</th><th>Due Date & Time</th><th>Status</th><th>Actions</th></tr></thead><tbody id="assignmentRows"></tbody></table></div>
     <div class="legend"><span><i class="dot g"></i>Completed</span><span><i class="dot y"></i>In Progress</span><span><i class="dot p"></i>To Do</span></div>
   </div>
 </section>
@@ -107,9 +107,9 @@ h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
   <div class="header"><div><h1>Assignments</h1><p class="subtitle">View and manage everything you need to finish.</p></div><button class="primary" onclick="openModal()">＋ New Assignment</button></div>
   <div class="card"><div class="filters">
     <div class="field"><label>SORT BY CLASS</label><select id="aFilterClass"><option value="">Class (default)</option><option value="asc">Class: A → Z</option><option value="desc">Class: Z → A</option></select></div>
-    <div class="field"><label>SORT BY DUE DATE</label><select id="aFilterDate"><option value="">Due Date (default)</option><option value="asc">Due Date: Soonest → Latest</option><option value="desc">Due Date: Latest → Soonest</option></select></div>
+    <div class="field"><label>SORT BY DUE DATE & TIME</label><select id="aFilterDate"><option value="">Due Date & Time (default)</option><option value="asc">Due Date/Time: Soonest → Latest</option><option value="desc">Due Date/Time: Latest → Soonest</option></select></div>
     <div class="field search"><label>SEARCH</label><span>⌕</span><input id="aSearch" placeholder="Search assignments..."></div>
-  </div><div class="table-wrap"><table class="assignment-table"><thead><tr><th>Title</th><th>Class</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="assignmentRows2"></tbody></table></div></div>
+  </div><div class="table-wrap"><table class="assignment-table"><thead><tr><th>Title</th><th>Class</th><th>Due Date & Time</th><th>Status</th><th>Actions</th></tr></thead><tbody id="assignmentRows2"></tbody></table></div></div>
 </section>
 
 <section id="classes" class="page">
@@ -161,17 +161,10 @@ h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
 </div>
 <div id="toast" class="toast"></div>
 
-
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-// ============================
- // AssignMate Cloud Sync
- // ============================
- // 1. Create a Firebase project.
- // 2. Enable Anonymous Authentication and Cloud Firestore.
- // 3. Paste your Firebase web config below.
  const firebaseConfig = {
   apiKey: "AIzaSyDsvCYABP8MWfbWOVIbZe1FYNfEgY5Asi0",
   authDomain: "assignmate-38dc3.firebaseapp.com",
@@ -272,22 +265,27 @@ function populateClassSelects(){
   el.innerHTML=data.classes.length?data.classes.map(c=>`<option>${esc(c)}</option>`).join(''):'<option value="">Add a class first</option>';
   el.value=data.classes.includes(old)?old:(data.classes[0]||'');
 }
+
 function filtered(which){
   const pre=which===1?['filterClass','filterDate','search']:['aFilterClass','aFilterDate','aSearch'];
   const [classSort,dateSort,q]=pre.map(x=>$(x).value.trim().toLowerCase());
   const result=data.assignments.filter(a=>
     !q || (a.title+' '+a.description+' '+a.className).toLowerCase().includes(q)
   );
+
+  // Helper function to create ISO-comparable string combining date and time
+  const getDateTime = a => `${a.dueDate}${a.dueTime || '23:59'}`;
+
   return result.sort((a,b)=>{
     if(classSort){
       const cmp=a.className.localeCompare(b.className,undefined,{sensitivity:'base'});
       if(cmp!==0)return classSort==='asc'?cmp:-cmp;
     }
     if(dateSort){
-      const cmp=a.dueDate.localeCompare(b.dueDate);
+      const cmp=getDateTime(a).localeCompare(getDateTime(b));
       if(cmp!==0)return dateSort==='asc'?cmp:-cmp;
     }
-    return a.dueDate.localeCompare(b.dueDate);
+    return getDateTime(a).localeCompare(getDateTime(b));
   });
 }
 
@@ -304,8 +302,8 @@ function formatTime(s){
 
 function rowHTML(a){
  const due=a.status==='Completed'
-   ? 'Completed'
-   : formatDate(a.dueDate)+(a.dueTime?`<br><small>${formatTime(a.dueTime)}</small>`:'');
+    ? 'Completed'
+    : formatDate(a.dueDate)+(a.dueTime?`<br><small>${formatTime(a.dueTime)}</small>`:'');
  const d=new Date(a.dueDate+'T00:00:00'),now=new Date();now.setHours(0,0,0,0);const diff=Math.round((d-now)/86400000);
  const dueClass=a.status!=='Completed'?(diff<0?'overdue':diff<=2?'due-soon':''):'';
  return `<tr><td class="title-cell"><strong>${esc(a.title)}</strong><small>${esc(a.description||'No description')}</small></td><td><span class="class-pill">${esc(a.className)}</span></td><td class="${dueClass}">${due}${a.status!=='Completed'&&diff===0?'<br><small>Today</small>':''}</td><td><select class="status-select status ${statusClass(a.status)}" aria-label="Change status" onchange="changeStatus('${a.id}', this.value)">
