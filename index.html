@@ -20,7 +20,7 @@ button{cursor:pointer}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:21px;padding:7px 9px 28px;color:#9b7af3}
 .brand-icon{font-size:25px}
 .nav{display:grid;gap:7px}
-.nav button{border:0;background:transparent;color:#d8deec;text-align:left;padding:12px 13px;border-radius:9px;font-size:15px;display:flex;gap:12px;align-items:center}
+.nav button{border:0;background:transparent;color:#d8deec;text-align:left;padding:12px 13px;border-radius:99px;font-size:15px;display:flex;gap:12px;align-items:center}
 .nav button:hover,.nav button.active{background:rgba(125,91,231,.24);color:#fff}
 .nav-icon{width:20px;text-align:center}
 .sidebar-bottom{margin-top:auto}
@@ -166,13 +166,13 @@ h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
  const firebaseConfig = {
-  apiKey: "AIzaSyDsvCYABP8MWfbWOVIbZe1FYNfEgY5Asi0",
-  authDomain: "assignmate-38dc3.firebaseapp.com",
-  projectId: "assignmate-38dc3",
-  storageBucket: "assignmate-38dc3.firebasestorage.app",
-  messagingSenderId: "560275764867",
-  appId: "1:560275764867:web:c8ffbad866a105c9cd0db6",
-  measurementId: "G-JKJES9Y3X5"
+ apiKey: "AIzaSyDsvCYABP8MWfbWOVIbZe1FYNfEgY5Asi0",
+ authDomain: "assignmate-38dc3.firebaseapp.com",
+ projectId: "assignmate-38dc3",
+ storageBucket: "assignmate-38dc3.firebasestorage.app",
+ messagingSenderId: "560275764867",
+ appId: "1:560275764867:web:c8ffbad866a105c9cd0db6",
+ measurementId: "G-JKJES9Y3X5"
 };
 
  const KEY='assignmate-data-v1';
@@ -251,53 +251,52 @@ function esc(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'
 function statusClass(s){return s==='Completed'?'completed':s==='In Progress'?'progress':'todo'}
 function formatDate(s){if(!s)return '—';const [y,m,d]=s.split('-');return new Date(Number(y),Number(m)-1,Number(d)).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}
 function dateFilter(a,type){
-  if(!type)return true;
-  const due=new Date(a.dueDate+'T00:00:00'), now=new Date();now.setHours(0,0,0,0);
-  const diff=Math.round((due-now)/86400000);
-  if(type==='overdue')return diff<0 && a.status!=='Completed';
-  if(type==='today')return diff===0;
-  if(type==='week')return diff>=0&&diff<=7;
-  if(type==='later')return diff>7;
-  return true;
+ if(!type)return true;
+ const due=new Date(a.dueDate+'T00:00:00'), now=new Date();now.setHours(0,0,0,0);
+ const diff=Math.round((due-now)/86400000);
+ if(type==='overdue')return diff<0 && a.status!=='Completed';
+ if(type==='today')return diff===0;
+ if(type==='week')return diff>=0&&diff<=7;
+ if(type==='later')return diff>7;
+ return true;
 }
 function populateClassSelects(){
-  const el=$('className');const old=el.value;
-  el.innerHTML=data.classes.length?data.classes.map(c=>`<option>${esc(c)}</option>`).join(''):'<option value="">Add a class first</option>';
-  el.value=data.classes.includes(old)?old:(data.classes[0]||'');
+ const el=$('className');const old=el.value;
+ el.innerHTML=data.classes.length?data.classes.map(c=>`<option>${esc(c)}</option>`).join(''):'<option value="">Add a class first</option>';
+ el.value=data.classes.includes(old)?old:(data.classes[0]||'');
 }
 
 function filtered(which){
-  const pre=which===1?['filterClass','filterDate','search']:['aFilterClass','aFilterDate','aSearch'];
-  const [classSort,dateSort,q]=pre.map(x=>$(x).value.trim().toLowerCase());
-  const result=data.assignments.filter(a=>
-    !q || (a.title+' '+a.description+' '+a.className).toLowerCase().includes(q)
-  );
+ const pre=which===1?['filterClass','filterDate','search']:['aFilterClass','aFilterDate','aSearch'];
+ const [classSort,dateSort,q]=pre.map(x=>$(x).value.trim().toLowerCase());
+ const result=data.assignments.filter(a=>
+   !q || (a.title+' '+a.description+' '+a.className).toLowerCase().includes(q)
+ );
 
-  // Helper function to create ISO-comparable string combining date and time
-  const getDateTime = a => `${a.dueDate}${a.dueTime || '23:59'}`;
+ const getDateTime = a => `${a.dueDate}${a.dueTime || '23:59'}`;
 
-  return result.sort((a,b)=>{
-    if(classSort){
-      const cmp=a.className.localeCompare(b.className,undefined,{sensitivity:'base'});
-      if(cmp!==0)return classSort==='asc'?cmp:-cmp;
-    }
-    if(dateSort){
-      const cmp=getDateTime(a).localeCompare(getDateTime(b));
-      if(cmp!==0)return dateSort==='asc'?cmp:-cmp;
-    }
-    return getDateTime(a).localeCompare(getDateTime(b));
-  });
+ return result.sort((a,b)=>{
+   if(classSort){
+     const cmp=a.className.localeCompare(b.className,undefined,{sensitivity:'base'});
+     if(cmp!==0)return classSort==='asc'?cmp:-cmp;
+   }
+   if(dateSort){
+     const cmp=getDateTime(a).localeCompare(getDateTime(b));
+     if(cmp!==0)return dateSort==='asc'?cmp:-cmp;
+   }
+   return getDateTime(a).localeCompare(getDateTime(b));
+ });
 }
 
 function formatTime(s){
-  if(!s)return '';
-  const [h,m]=s.split(':');
-  const d=new Date();
-  d.setHours(Number(h),Number(m),0,0);
-  return d.toLocaleTimeString(undefined,{
-    hour:'numeric',
-    minute:'2-digit'
-  });
+ if(!s)return '';
+ const [h,m]=s.split(':');
+ const d=new Date();
+ d.setHours(Number(h),Number(m),0,0);
+ return d.toLocaleTimeString(undefined,{
+   hour:'numeric',
+   minute:'2-digit'
+ });
 }
 
 function rowHTML(a){
@@ -305,7 +304,7 @@ function rowHTML(a){
     ? 'Completed'
     : formatDate(a.dueDate)+(a.dueTime?`<br><small>${formatTime(a.dueTime)}</small>`:'');
  const d=new Date(a.dueDate+'T00:00:00'),now=new Date();now.setHours(0,0,0,0);const diff=Math.round((d-now)/86400000);
- const dueClass=a.status!=='Completed'?(diff<0?'overdue':diff<=2?'due-soon':''):'';
+ const dueClass=a.status!=='Completed'?(diff<0?'overdue':diff<=1?'due-soon':''):'';
  return `<tr><td class="title-cell"><strong>${esc(a.title)}</strong><small>${esc(a.description||'No description')}</small></td><td><span class="class-pill">${esc(a.className)}</span></td><td class="${dueClass}">${due}${a.status!=='Completed'&&diff===0?'<br><small>Today</small>':''}</td><td><select class="status-select status ${statusClass(a.status)}" aria-label="Change status" onchange="changeStatus('${a.id}', this.value)">
 <option ${a.status==='To Do'?'selected':''}>To Do</option>
 <option ${a.status==='In Progress'?'selected':''}>In Progress</option>
@@ -313,9 +312,9 @@ function rowHTML(a){
 </select></td><td><div class="actions"><button class="icon-btn" title="Edit" onclick="editAssignment('${a.id}')">✎</button><button class="icon-btn" title="Delete" onclick="deleteAssignment('${a.id}')">♲</button></div></td></tr>`
 }
 function renderRows(){
-  const a1=filtered(1),a2=filtered(2);
-  $('assignmentRows').innerHTML=a1.length?a1.map(rowHTML).join():'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
-  $('assignmentRows2').innerHTML=a2.length?a2.map(rowHTML).join():'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
+ const a1=filtered(1),a2=filtered(2);
+ $('assignmentRows').innerHTML=a1.length?a1.map(rowHTML).join():'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
+ $('assignmentRows2').innerHTML=a2.length?a2.map(rowHTML).join():'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
 }
 function renderClasses(){
  $('classList').innerHTML=data.classes.length?data.classes.map(c=>`<div class="class-item"><strong>${esc(c)}</strong><button title="Remove" onclick="removeClass('${encodeURIComponent(c)}')">✕</button></div>`).join(''):'<div class="empty">No classes yet.</div>';
