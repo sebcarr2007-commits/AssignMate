@@ -304,7 +304,7 @@ function rowHTML(a){
     ? 'Completed'
     : formatDate(a.dueDate)+(a.dueTime?`<br><small>${formatTime(a.dueTime)}</small>`:'');
  const d=new Date(a.dueDate+'T00:00:00'),now=new Date();now.setHours(0,0,0,0);const diff=Math.round((d-now)/86400000);
- const dueClass=a.status!=='Completed'?(diff<0?'overdue':diff<=1?'due-soon':''):'';
+ const dueClass=a.status!=='Completed'?(diff<0?'overdue':diff<=0?'due-soon':''):'';
  return `<tr><td class="title-cell"><strong>${esc(a.title)}</strong><small>${esc(a.description||'No description')}</small></td><td><span class="class-pill">${esc(a.className)}</span></td><td class="${dueClass}">${due}${a.status!=='Completed'&&diff===0?'<br><small>Today</small>':''}</td><td><select class="status-select status ${statusClass(a.status)}" aria-label="Change status" onchange="changeStatus('${a.id}', this.value)">
 <option ${a.status==='To Do'?'selected':''}>To Do</option>
 <option ${a.status==='In Progress'?'selected':''}>In Progress</option>
