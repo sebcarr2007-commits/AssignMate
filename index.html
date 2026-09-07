@@ -31,7 +31,7 @@ button{cursor:pointer}
 .page{display:none}.page.active{display:block}
 .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.sync-status{font-size:12px;color:var(--muted);margin-top:5px}
 h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
-.primary{border:0;background:var(--purple);color:#fff;padding:12px 17px;border-radius:9px;font-weight:700;box-shadow:0 5px 14px rgba(117,82,232,.18)}
+.primary{border:0;background:var(--purple);color:#fff;padding:12px 17px;border-radius:99px;font-weight:700;box-shadow:0 5px 14px rgba(117,82,232,.18)}
 .primary:hover{background:#6542dc}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-bottom:26px}
 .stat{padding:25px;border-radius:12px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;gap:18px}
@@ -40,7 +40,7 @@ h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
 .green .stat-icon{background:var(--green);color:#fff}.yellow .stat-icon{background:#f0b51c;color:#fff}.purple .stat-icon{background:var(--todo);color:#fff}
 .stat-num{font-size:28px;font-weight:800}.stat-label{font-weight:600}.stat-note{font-size:13px;color:var(--muted);margin-top:4px}
 .card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.filters{padding:18px 20px;display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:14px;border-bottom:1px solid var(--line)}
+.filters{padding:18px 20px;display:grid;grid-template-columns:repeat(3,1fr) 1.15fr;gap:14px;border-bottom:1px solid var(--line)}
 .field label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:7px}
 .field input,.field select,.field textarea{width:100%;border:1px solid #d8dde7;border-radius:8px;padding:10px 11px;outline:none;background:#fff;color:var(--text)}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(117,82,232,.1)}
@@ -96,6 +96,7 @@ h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
     <div class="filters">
       <div class="field"><label>SORT BY CLASS</label><select id="filterClass"><option value="">Class (default)</option><option value="asc">Class: A → Z</option><option value="desc">Class: Z → A</option></select></div>
       <div class="field"><label>SORT BY DUE DATE & TIME</label><select id="filterDate"><option value="">Due Date & Time (default)</option><option value="asc">Due Date/Time: Soonest → Latest</option><option value="desc">Due Date/Time: Latest → Soonest</option></select></div>
+      <div class="field"><label>SORT BY STATUS</label><select id="filterStatus"><option value="">Status (default)</option><option value="active">Active First (To Do / In Progress)</option><option value="completed">Completed First</option></select></div>
       <div class="field search"><label>SEARCH</label><span>⌕</span><input id="search" placeholder="Search assignments..."></div>
     </div>
     <div class="table-wrap"><table class="assignment-table"><thead><tr><th>Title</th><th>Class</th><th>Due Date & Time</th><th>Status</th><th>Actions</th></tr></thead><tbody id="assignmentRows"></tbody></table></div>
@@ -108,6 +109,7 @@ h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
   <div class="card"><div class="filters">
     <div class="field"><label>SORT BY CLASS</label><select id="aFilterClass"><option value="">Class (default)</option><option value="asc">Class: A → Z</option><option value="desc">Class: Z → A</option></select></div>
     <div class="field"><label>SORT BY DUE DATE & TIME</label><select id="aFilterDate"><option value="">Due Date & Time (default)</option><option value="asc">Due Date/Time: Soonest → Latest</option><option value="desc">Due Date/Time: Latest → Soonest</option></select></div>
+    <div class="field"><label>SORT BY STATUS</label><select id="aFilterStatus"><option value="">Status (default)</option><option value="active">Active First (To Do / In Progress)</option><option value="completed">Completed First</option></select></div>
     <div class="field search"><label>SEARCH</label><span>⌕</span><input id="aSearch" placeholder="Search assignments..."></div>
   </div><div class="table-wrap"><table class="assignment-table"><thead><tr><th>Title</th><th>Class</th><th>Due Date & Time</th><th>Status</th><th>Actions</th></tr></thead><tbody id="assignmentRows2"></tbody></table></div></div>
 </section>
@@ -267,15 +269,23 @@ function populateClassSelects(){
 }
 
 function filtered(which){
- const pre=which===1?['filterClass','filterDate','search']:['aFilterClass','aFilterDate','aSearch'];
- const [classSort,dateSort,q]=pre.map(x=>$(x).value.trim().toLowerCase());
+ const pre=which===1?['filterClass','filterDate','filterStatus','search']:['aFilterClass','aFilterDate','aFilterStatus','aSearch'];
+ const [classSort,dateSort,statusSort,q]=pre.map(x=>$(x).value.trim().toLowerCase());
  const result=data.assignments.filter(a=>
    !q || (a.title+' '+a.description+' '+a.className).toLowerCase().includes(q)
  );
 
  const getDateTime = a => `${a.dueDate}${a.dueTime || '23:59'}`;
+ const getStatusGroup = a => (a.status === 'Completed' ? 1 : 0);
 
  return result.sort((a,b)=>{
+   if(statusSort){
+     const groupA = getStatusGroup(a);
+     const groupB = getStatusGroup(b);
+     if(groupA !== groupB){
+       return statusSort === 'active' ? groupA - groupB : groupB - groupA;
+     }
+   }
    if(classSort){
      const cmp=a.className.localeCompare(b.className,undefined,{sensitivity:'base'});
      if(cmp!==0)return classSort==='asc'?cmp:-cmp;
@@ -313,8 +323,8 @@ function rowHTML(a){
 }
 function renderRows(){
  const a1=filtered(1),a2=filtered(2);
- $('assignmentRows').innerHTML=a1.length?a1.map(rowHTML).join():'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
- $('assignmentRows2').innerHTML=a2.length?a2.map(rowHTML).join():'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
+ $('assignmentRows').innerHTML=a1.length?a1.map(rowHTML).join(''):'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
+ $('assignmentRows2').innerHTML=a2.length?a2.map(rowHTML).join(''):'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
 }
 function renderClasses(){
  $('classList').innerHTML=data.classes.length?data.classes.map(c=>`<div class="class-item"><strong>${esc(c)}</strong><button title="Remove" onclick="removeClass('${encodeURIComponent(c)}')">✕</button></div>`).join(''):'<div class="empty">No classes yet.</div>';
@@ -365,7 +375,7 @@ function changeStatus(id,status){
   toast(`Status changed to ${status}.`);
 }
 function editAssignment(id){openModal(id)}
-function deleteAssignment(id){const a=data.assignments.find(x=>x.id===id);if(confirm(`Delete "${a.title}"?`)){data.assignments=data.assignments.filter(x=>x.id!==id);save();render();toast('Assignment deleted.')}}
+function deleteAssignment(id){const a=data.assignments.find(x=>x.id===id);if(confirm(`Delete "${a.title}"?`)){data.assignments=data.assignments.filter(x=>x!==id);save();render();toast('Assignment deleted.')}}
 function addClass(){const input=$('newClass'),name=input.value.trim();if(!name)return;if(data.classes.some(c=>c.toLowerCase()===name.toLowerCase())){toast('That class already exists.');return}data.classes.push(name);data.classes.sort();input.value='';save();render();toast('Class added.')}
 function removeClass(encoded){const c=decodeURIComponent(encoded);if(data.assignments.some(a=>a.className===c)){alert('This class is used by an assignment. Delete or edit those assignments first.');return}if(confirm(`Remove "${c}"?`)){data.classes=data.classes.filter(x=>x!==c);save();render()}}
 $('classFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{const names=reader.result.split(/[\r\n,]+/).map(x=>x.trim()).filter(Boolean);let added=0;names.forEach(n=>{if(!data.classes.some(c=>c.toLowerCase()===n.toLowerCase())){data.classes.push(n);added++}});data.classes.sort();save();render();toast(`Imported ${added} class${added===1?'':'es'}.`)};reader.readAsText(file);e.target.value='' });
@@ -373,7 +383,7 @@ function exportData(){const blob=new Blob([JSON.stringify(data,null,2)],{type:'a
 $('backupFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!Array.isArray(x.classes)||!Array.isArray(x.assignments))throw Error();data=x;save();render();toast('Backup imported.')}catch{alert('That file is not a valid AssignMate backup.')}};r.readAsText(file);e.target.value=''});
 function clearAll(){if(confirm('This will delete all assignments and classes from this browser. Continue?')){data={classes:[],assignments:[]};save();render();toast('All data cleared.')}}
 document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$(b.dataset.page).classList.add('active');if(b.dataset.page==='calendar')renderCalendar()}));
-['filterClass','filterDate','search','aFilterClass','aFilterDate','aSearch'].forEach(id=>$(id).addEventListener('input',renderRows));
+['filterClass','filterDate','filterStatus','search','aFilterClass','aFilterDate','aFilterStatus','aSearch'].forEach(id=>$(id).addEventListener('input',renderRows));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
 initCloud();
