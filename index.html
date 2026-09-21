@@ -317,12 +317,29 @@ function formatTime(s){
 }
 
 function rowHTML(a){
- const due=a.status==='Completed'
-    ? 'Completed'
-    : formatDate(a.dueDate)+(a.dueTime?`<br><small>${formatTime(a.dueTime)}</small>`:'');
  const d=new Date((a.dueDate||todayStr())+'T00:00:00'),now=new Date();now.setHours(0,0,0,0);const diff=Math.round((d-now)/86400000);
  const dueClass=a.status!=='Completed'?(diff<0?'overdue':diff<=0?'due-soon':''):'';
- return `<tr><td class="title-cell"><strong>${esc(a.title)}</strong><small>${esc(a.description||'No description')}</small></td><td><span class="class-pill">${esc(a.className)}</span></td><td class="${dueClass}">${due}${a.status!=='Completed'&&diff===0?'<br><small>Today</small>':''}</td><td><select class="status-select status ${statusClass(a.status)}" aria-label="Change status" onchange="changeStatus('${a.id}', this.value)">
+ 
+ let due = '—';
+ if (a.status === 'Completed') {
+   due = 'Completed';
+ } else {
+   const dateStr = formatDate(a.dueDate);
+   const timeStr = a.dueTime ? formatTime(a.dueTime) : '';
+   const isToday = diff === 0;
+
+   if (timeStr && isToday) {
+     due = `${dateStr}<br><small>${timeStr} • Today</small>`;
+   } else if (timeStr) {
+     due = `${dateStr}<br><small>${timeStr}</small>`;
+   } else if (isToday) {
+     due = `${dateStr}<br><small>Today</small>`;
+   } else {
+     due = dateStr;
+   }
+ }
+
+ return `<tr><td class="title-cell"><strong>${esc(a.title)}</strong><small>${esc(a.description||'No description')}</small></td><td><span class="class-pill">${esc(a.className)}</span></td><td class="${dueClass}">${due}</td><td><select class="status-select status ${statusClass(a.status)}" aria-label="Change status" onchange="changeStatus('${a.id}', this.value)">
 <option ${a.status==='To Do'?'selected':''}>To Do</option>
 <option ${a.status==='In Progress'?'selected':''}>In Progress</option>
 <option ${a.status==='Completed'?'selected':''}>Completed</option>
@@ -331,12 +348,12 @@ function rowHTML(a){
 
 function renderRows(){
  const a1=filtered(1),a2=filtered(2);
- if($('assignmentRows')) $('assignmentRows').innerHTML=a1.length?a1.map(rowHTML).join(''):'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
- if($('assignmentRows2')) $('assignmentRows2').innerHTML=a2.length?a2.map(rowHTML).join(''):'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
+ if($('assignmentRows'))$('assignmentRows').innerHTML=a1.length?a1.map(rowHTML).join(''):'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
+ if($('assignmentRows2'))$('assignmentRows2').innerHTML=a2.length?a2.map(rowHTML).join(''):'<tr><td colspan="5"><div class="empty"><strong>No assignments found</strong>Try changing your filters or create a new assignment.</div></td></tr>';
 }
 
 function renderClasses(){
- if($('classList')) $('classList').innerHTML=data.classes.length?data.classes.map(c=>`<div class="class-item"><strong>${esc(c)}</strong><button title="Remove" onclick="removeClass('${encodeURIComponent(c)}')">✕</button></div>`).join(''):'<div class="empty">No classes yet.</div>';
+ if($('classList'))$('classList').innerHTML=data.classes.length?data.classes.map(c=>`<div class="class-item"><strong>${esc(c)}</strong><button title="Remove" onclick="removeClass('${encodeURIComponent(c)}')">✕</button></div>`).join(''):'<div class="empty">No classes yet.</div>';
 }
 
 function renderCalendar(){
@@ -346,7 +363,7 @@ function renderCalendar(){
  for(let i=0;i<start;i++)h+='<div class="cal-day"></div>';
  for(let day=1;day<=days;day++){
   const ds=localDate(new Date(y,m,day)),isToday=ds===todayStr(),tasks=data.assignments.filter(a=>a.dueDate===ds);
-  h+=`<div class="cal-day ${isToday?'today':''}"><div class="cal-num ${isToday?'today-num':''}">${day}</div>${tasks.map(a=>`<div class="cal-task ${statusClass(a.status)}" title="${esc(a.title)}">${esc(a.title)}</div>`).join('')}</div>`;
+  h+=`<div class="cal-day ${isToday?'today':''}"><div class="cal-num ${isToday?'today-num':''}">${day}</div>${tasks.map(a=>`<div class="cal-task ${statusClass(a.status)}" title="${esc(a.title)}">${esc(a.title)}${a.dueTime ? ' (' + formatTime(a.dueTime) + ')' : ''}</div>`).join('')}</div>`;
  }
  $('calendarGrid').innerHTML=h;
 }
@@ -361,14 +378,10 @@ function render(){
 
 function openModal(id=null){
  $('modal').classList.add('open');$('modalTitle').textContent=id?'Edit Assignment':'New Assignment';
- $('editId').value=id||'';const a=id&&data.assignments.find(x=>x.id===id);
- $('title').value=a?.title||'';
-$('className').value=a?.className||data.classes[0]||'';
-$('dueDate').value=a?.dueDate||todayStr();
-$('dueTime').value=a?.dueTime||'';
-$('status').value=a?.status||'To Do';
-$('description').value=a?.description||'';
-$('title').focus();
+ $('editId').value=id\vert{}\vert{}'';const a=id&&data.assignments.find(x=>x.id===id);$('title').value=a?.title||'';
+$('className').value=a?.className\vert{}\vert{}data.classes[0]\vert{}\vert{}'';$('dueDate').value=a?.dueDate||todayStr();
+$('dueTime').value=a?.dueTime\vert{}\vert{}'';$('status').value=a?.status||'To Do';
+$('description').value=a?.description\vert{}\vert{}'';$('title').focus();
 }
 
 function closeModal(){$('modal').classList.remove('open')}
@@ -412,7 +425,7 @@ function deleteAssignment(id){
  const a=data.assignments.find(x=>x.id===id);
  if(!a) return;
  if(confirm(`Delete "${a.title}"?`)){
-  data.assignments=data.assignments.filter(x=>x.id!==id);
+  data.assignments=data.assignments.filter(x=>x!==id);
   save();
   render();
   toast('Assignment deleted.');
