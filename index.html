@@ -69,7 +69,7 @@ h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
 .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(10,16,29,.48);z-index:10;align-items:center;justify-content:center;padding:20px}.modal-backdrop.open{display:flex}
 .modal{background:#fff;width:min(590px,100%);border-radius:14px;padding:25px;box-shadow:0 25px 80px rgba(0,0,0,.22)}.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.modal-header h2{margin:0}.close{border:0;background:#f0f2f6;border-radius:7px;width:32px;height:32px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.full{grid-column:1/-1}.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}.secondary{border:1px solid #d7dce6;background:#fff;padding:11px 16px;border-radius:8px;font-weight:700}.danger{color:var(--danger)}
-.toast{position:fixed;right:25px;bottom:25px;background:#182238;color:#fff;padding:13px 17px;border-radius:9px;display:none;z-index:20}.toast.show{display:block}
+.toast{position:fixed;right:25px;bottom:25px;background:#182238;color:#fff;padding:13px 17px;border-radius:99px;display:none;z-index:20}.toast.show{display:block}
 @media(max-width:900px){.sidebar{width:70px;padding:18px 9px}.brand span,.nav button span:not(.nav-icon),.profile>div:not(.avatar),.sidebar-bottom .nav button span:not(.nav-icon){display:none}.brand{padding:7px 12px 28px}.main{margin-left:70px;width:calc(100% - 70px);padding:22px 18px}.stats{gap:12px}.filters{grid-template-columns:1fr 1fr}.assignment-table th:nth-child(4),.assignment-table td:nth-child(4){display:none}}
 @media(max-width:600px){.header{align-items:flex-start;gap:15px}.header .primary{padding:10px}.stats{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.calendar-grid{min-width:650px}.calendar-scroll{overflow:auto}}
 </style>
@@ -365,11 +365,13 @@ function render(){
 }
 
 function openModal(id=null){
- $('modal').classList.add('open');$('modalTitle').textContent=id?'Edit Assignment':'New Assignment';
- $('editId').value=id\vert{}\vert{}'';const a=id&&data.assignments.find(x=>x.id===id);$('title').value=a?.title||'';
-$('className').value=a?.className\vert{}\vert{}data.classes[0]\vert{}\vert{}'';$('dueDate').value=a?.dueDate||todayStr();
-$('dueTime').value=a?.dueTime\vert{}\vert{}'';$('status').value=a?.status||'To Do';
-$('description').value=a?.description\vert{}\vert{}'';$('title').focus();
+ $('modal').classList.add('open');
+ $('modalTitle').textContent=id?'Edit Assignment':'New Assignment';$('editId').value=id||'';
+ const a=id&&data.assignments.find(x=>x.id===id);
+ $('title').value=a?.title||'';
+ $('className').value=a?.className\vert{}\vert{}data.classes[0]\vert{}\vert{}'';$('dueDate').value=a?.dueDate||todayStr();
+ $('dueTime').value=a?.dueTime\vert{}\vert{}'';$('status').value=a?.status||'To Do';
+ $('description').value=a?.description\vert{}\vert{}'';$('title').focus();
 }
 
 function closeModal(){$('modal').classList.remove('open')}
@@ -388,12 +390,12 @@ $('assignmentForm').addEventListener('submit',e=>{
  };
  if(!obj.className){toast('Add a class first.');return}
  if(id){
-   const i=data.assignments.findIndex(a=>a.id===id);
-   if(i!==-1) data.assignments[i]=obj;
-   toast('Assignment updated.');
+    const i=data.assignments.findIndex(a=>a.id===id);
+    if(i!==-1) data.assignments[i]=obj;
+    toast('Assignment updated.');
  }else{
-   data.assignments.push(obj);
-   toast('Assignment created.');
+    data.assignments.push(obj);
+    toast('Assignment created.');
  }
  save();closeModal();render();
 });
@@ -413,7 +415,7 @@ function deleteAssignment(id){
  const a=data.assignments.find(x=>x.id===id);
  if(!a) return;
  if(confirm(`Delete "${a.title}"?`)){
-  data.assignments=data.assignments.filter(x=>x!==id);
+  data.assignments=data.assignments.filter(x=>x.id!==id);
   save();
   render();
   toast('Assignment deleted.');
