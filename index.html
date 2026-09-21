@@ -328,9 +328,7 @@ function rowHTML(a){
    const timeStr = a.dueTime ? formatTime(a.dueTime) : '';
    const isToday = diff === 0;
 
-   if (timeStr && isToday) {
-     due = `${dateStr}<br><small>${timeStr} • Today</small>`;
-   } else if (timeStr) {
+   if (timeStr) {
      due = `${dateStr}<br><small>${timeStr}</small>`;
    } else if (isToday) {
      due = `${dateStr}<br><small>Today</small>`;
