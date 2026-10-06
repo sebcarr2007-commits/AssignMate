@@ -86,7 +86,7 @@ h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
   </nav>
   <div class="sidebar-bottom">
     <nav class="nav"><button data-page="settings"><span class="nav-icon">⚙</span><span>Settings</span></button></nav>
-    <div class="profile"><div class="avatar">S</div><div><strong>Student</strong><small>Assignment organizer</small></div></div>
+    <div class="profile"><div class="avatar" id="userAvatar">S</div><div><strong id="userName">Student</strong><small id="userSub">Assignment organizer</small></div></div>
   </div>
 </aside>
 
@@ -131,7 +131,7 @@ h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
 
 <section id="settings" class="page">
   <div class="header"><div><h1>Settings</h1><p class="subtitle">Your data is stored locally in this browser.</p></div></div>
-  <div class="card section-card"><h2>Cloud Sync</h2><p>This version is ready for Firebase cloud sync. After you add your Firebase configuration to the top of the file and enable Anonymous Authentication + Firestore, assignments will sync between your phone and computer.</p><p style="font-size:13px;color:var(--muted)">Your Firebase configuration is not a password; Firestore Security Rules protect the data. Follow the setup steps included with this download.</p></div><div class="card section-card"><h2>Data</h2><p>Export a backup of your classes and assignments, or import one later.</p><button class="primary" onclick="exportData()">Export Backup</button> <label class="secondary" style="display:inline-block;cursor:pointer">Import Backup <input type="file" id="backupFile" accept=".json" style="display:none"></label></div>
+  <div class="card section-card"><h2>Cloud Sync</h2><p>This version is ready for Firebase cloud sync. Click "Sign in with Google" at the top of the page to sync your assignments between devices.</p></div><div class="card section-card"><h2>Data</h2><p>Export a backup of your classes and assignments, or import one later.</p><button class="primary" onclick="exportData()">Export Backup</button> <label class="secondary" style="display:inline-block;cursor:pointer">Import Backup <input type="file" id="backupFile" accept=".json" style="display:none"></label></div>
   <div class="card section-card"><h2>Danger zone</h2><p>Delete every assignment and class saved in this browser.</p><button class="secondary danger" onclick="clearAll()">Clear All Data</button></div>
 </section>
 </main>
@@ -214,35 +214,81 @@ h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin:6px 0 0}
    render();
 
    if(!firebaseConfigured()){
-     const sync=$('syncStatus'); if(sync) sync.textContent='☁ Local mode';
+     updateSyncUI(false);
      return;
    }
 
    try{
      firebase.initializeApp(firebaseConfig);
      db=firebase.firestore();
-     const provider = new firebase.auth.GoogleAuthProvider();
-     await firebase.auth().signInWithPopup(provider);
-     currentUser = firebase.auth().currentUser;
-     cloudEnabled=true;
-     const sync=$('syncStatus'); if(sync) sync.textContent='☁ Synced across devices';
 
-     const ref=db.collection('users').doc(currentUser.uid);
-     const snap=await ref.get();
-     if(snap.exists){
-       data=snap.data();
-       if(!Array.isArray(data.classes))data.classes=[];
-       if(!Array.isArray(data.assignments))data.assignments=[];
-     }else{
-       data={classes:defaultClasses,assignments:[]};
-       await ref.set(data);
-     }
-     ensureAssignmentIds();
-     render();
-     toast('Cloud sync connected ✓');
+     firebase.auth().onAuthStateChanged(async (user) => {
+       if (user) {
+         currentUser = user;
+         cloudEnabled = true;
+         updateSyncUI(true, user);
+
+         const ref=db.collection('users').doc(currentUser.uid);
+         const snap=await ref.get();
+         if(snap.exists){
+           data=snap.data();
+           if(!Array.isArray(data.classes))data.classes=[];
+           if(!Array.isArray(data.assignments))data.assignments=[];
+         }else{
+           data={classes:defaultClasses,assignments:[]};
+           await ref.set(data);
+         }
+         ensureAssignmentIds();
+         render();
+         toast('Cloud sync connected ✓');
+       } else {
+         currentUser = null;
+         cloudEnabled = false;
+         updateSyncUI(false);
+         loadLocalData();
+         render();
+       }
+     });
    }catch(err){
      console.error(err);
-     const sync=$('syncStatus'); if(sync) sync.textContent='☁ Local mode';
+     updateSyncUI(false);
+   }
+ }
+
+ function updateSyncUI(loggedIn, user=null){
+   const sync=$('syncStatus');
+   if(!sync) return;
+   if(loggedIn && user){
+     sync.innerHTML=`☁ Synced as ${esc(user.displayName || user.email)} · <a href="#" onclick="signOut(event)" style="color:var(--muted);text-decoration:underline;">Sign Out</a>`;
+     if($('userAvatar'))$('userAvatar').textContent = (user.displayName||'S')[0].toUpperCase();
+     if($('userName'))$('userName').textContent = user.displayName || 'Student';
+     if($('userSub'))$('userSub').textContent = user.email || 'Cloud synced';
+   } else {
+     sync.innerHTML=`☁ Local mode — <a href="#" onclick="loginWithGoogle(event)" style="color:var(--purple);font-weight:bold;text-decoration:underline;">Sign in with Google</a>`;
+     if($('userAvatar'))$('userAvatar').textContent = 'S';
+     if($('userName'))$('userName').textContent = 'Student';
+     if($('userSub'))$('userSub').textContent = 'Assignment organizer';
+   }
+ }
+
+ async function loginWithGoogle(e){
+   if(e) e.preventDefault();
+   try {
+     const provider = new firebase.auth.GoogleAuthProvider();
+     await firebase.auth().signInWithPopup(provider);
+   } catch(err) {
+     console.error(err);
+     toast('Sign-in failed or closed.');
+   }
+ }
+
+ async function signOut(e){
+   if(e) e.preventDefault();
+   try {
+     await firebase.auth().signOut();
+     toast('Signed out.');
+   } catch(err) {
+     console.error(err);
    }
  }
 
